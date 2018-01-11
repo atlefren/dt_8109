@@ -1,0 +1,6 @@
+venv
+data_v2
+*.pickle
+*.csv
+*.png
+*.pyc
