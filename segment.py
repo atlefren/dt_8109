@@ -46,7 +46,6 @@ X_train_tfidf = tfidf_transformer.fit_transform(X_train_counts)
 clf = MultinomialNB().fit(X_train_tfidf, train_set['category'])
 
 
-
 # run trough the holdout set
 # and predict the category
 # count correct categories
@@ -73,7 +72,8 @@ df_complete = pd.read_csv(
     date_parser=pd.core.tools.datetimes.to_datetime
 )
 
-df_complete = df_complete[~df_complete['event_id'].isin(train_set['event_id'].tolist())]
+# optionally remove the manually categorized events
+# df_complete = df_complete[~df_complete['event_id'].isin(train_set['event_id'].tolist())]
 
 
 ids = []

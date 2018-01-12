@@ -42,7 +42,6 @@ def add_categories(df):
     categories = cat['category'].unique()
 
     def category_for_event(row):
-
         return cat.loc[cat['event_id'] == row['event_id']]['category'].values[0]
 
     def check_category(row, category):
@@ -89,8 +88,6 @@ def get_sold_tickets(filename):
     df['tickets_sold'] = df.apply(lambda row: num_tickets_sold(row, tickets, purchases), axis=1, reduce=True)
 
     df_sold = df[df['tickets_sold'] > 0]
-    # df_sold_out = df[df['tickets_sold'] >= df['max_capacity']]
-    #df_sold_90 = df[df['tickets_sold'] >= df['max_capacity'] * 0.9]
     df_sold.to_csv(filename, index=False)
     return df_sold
 
@@ -113,29 +110,42 @@ def print_accuracy(df, percentage):
 
 percentage = 0.9
 
+# get all events that has at least one ticket sold
 df = get_sold_tickets('./events_sold_tickets.csv')
+
+# set the duration (in seconds)
 df['duration'] = df.apply(lambda row: (row['end'] - row['start']).total_seconds(), axis=1)
 
+# get the price (of the cheapest ticket type)
 tickets = pd.read_csv('data_v2/tickets.csv')
 df['price'] = df.apply(lambda row: get_price(row, tickets), axis=1)
 
+# set the four season variables
 for season in ['winter', 'spring', 'summer', 'fall']:
     df['is_%s' % season] = df.apply(lambda row: check_season(row, season), axis=1)
 
-
-df['met_sales_goal'] = df.apply(lambda row: 1 if row['tickets_sold'] >= row['max_capacity'] * percentage else 0, axis=1)
-
+# add the n category variables
 df = add_categories(df)
 
+# set the vaiable met goal based on the percentage
+df['met_sales_goal'] = df.apply(lambda row: 1 if row['tickets_sold'] >= row['max_capacity'] * percentage else 0, axis=1)
+
+# split the dataset to create training and holdout set
 split = np.array_split(df, 2)
 train_set = split[0]
 holdout_set = split[1]
 
+# list the features used by the classifier
 features = ['duration', 'price', 'is_winter', 'is_spring', 'is_summer', 'is_fall', 'is_concert',  'is_stage',  'is_course', 'is_fooddrinks', 'is_exhibition',  'is_unknown',  'is_festival',  'is_other']
 
+# create the classifier at fit it with training data
 X = df[features]
 y = df['met_sales_goal']
 dt = DecisionTreeClassifier(min_samples_split=20, random_state=99)
 dt.fit(X, y)
 
-print_accuracy(train_set, percentage)
+# optionally visualize the tree
+# visualize_tree(dt, features)
+
+# run trough the holdout set, predict and compute accuracy
+print_accuracy(holdout_set, percentage)
